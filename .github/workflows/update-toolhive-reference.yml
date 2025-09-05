@@ -32,9 +32,20 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+
+      - name: Determine version
+        id: get-version
+        run: |
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            echo "version=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Echo timestamp
         run: |
-          echo "Current time: $(date -u)" >> timestamp.txt
+          echo "Current time: $(date -u)" > timestamp.txt
+          echo "Version: ${{ steps.get-version.outputs.version }}" >> timestamp.txt
 
       - name: Check for changes
         id: git-diff
@@ -52,13 +63,13 @@ jobs:
         if: steps.git-diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7
         with:
-          branch: update-toolhive-reference-${{ github.event.inputs.version }}
+          branch: update-toolhive-reference-${{ steps.get-version.outputs.version }}
           title: |
-            Update ToolHive reference docs for ${{ github.event.inputs.version }}
+            Update ToolHive reference docs for ${{ steps.get-version.outputs.version }}
           body: |
-            This PR updates the ToolHive CLI and API reference documentation for release: ${{ github.event.inputs.version }}.
+            This PR updates the ToolHive CLI and API reference documentation for release: ${{ steps.get-version.outputs.version }}.
           commit-message: |
-            Update ToolHive reference docs for ${{ github.event.inputs.version }}
+            Update ToolHive reference docs for ${{ steps.get-version.outputs.version }}
           labels: |
             autogen-docs
           delete-branch: true
